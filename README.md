@@ -49,5 +49,5 @@ Este projeto visa solucionar esse problema através de uma arquitetura "Ambient 
 
 1. **Clone o repositório:**
    ```bash
-   git clone [https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git](https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git)
-   cd SEU_REPOSITORIO
+   git clone [https://github.com/Paulojr0302/projeto-integrador-medico.git](https://github.com/Paulojr0302/projeto-integrador-medico.git)
+   cd projeto-integrador-medico
