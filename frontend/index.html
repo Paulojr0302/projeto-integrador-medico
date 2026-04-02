@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistente Médico Inteligente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --success-hover: #059669;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+
+        h1 { text-align: center; font-size: 24px; margin-top: 0; margin-bottom: 8px; color: var(--primary); }
+        p.subtitle { text-align: center; color: var(--text-muted); margin-bottom: 32px; font-size: 15px; }
+
+        .controls { display: flex; justify-content: center; gap: 16px; margin-bottom: 32px; }
+
+        button {
+            display: flex; align-items: center; gap: 8px; padding: 12px 24px;
+            font-size: 16px; font-weight: 500; border: none; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s ease; color: white; font-family: inherit;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #btnGravar { background-color: var(--primary); }
+        #btnGravar:hover:not(:disabled) { background-color: var(--primary-hover); }
+        #btnParar { background-color: var(--danger); }
+        #btnParar:hover:not(:disabled) { background-color: var(--danger-hover); }
+        #btnCopiar { background-color: var(--success); padding: 8px 16px; font-size: 14px; margin-top: 16px; width: 100%; justify-content: center;}
+        #btnCopiar:hover { background-color: var(--success-hover); }
+
+        .status-bar { text-align: center; padding: 12px; border-radius: 8px; margin-bottom: 24px; font-weight: 500; display: none; }
+        .status-recording { display: block; background-color: #fef2f2; color: var(--danger); border: 1px solid #fecaca; animation: pulse 2s infinite; }
+        .status-processing { display: block; background-color: #eff6ff; color: var(--primary); border: 1px solid #bfdbfe; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .results-container { display: none; gap: 24px; flex-direction: column; }
+        .card { background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; }
+        .card h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+        .edit-hint { font-size: 12px; color: var(--primary); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+
+        .transcricao-text { font-size: 14px; color: var(--text-muted); font-style: italic; line-height: 1.5; }
+
+        /* Área de Prontuário Editável */
+        .prontuario-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-main);
+            padding: 12px;
+            border: 1px dashed transparent;
+            border-radius: 6px;
+            transition: all 0.2s;
+            min-height: 100px;
+        }
+
+        /* Efeitos visuais para mostrar ao médico que ele pode clicar e digitar */
+        .prontuario-text[contenteditable="true"]:hover {
+            border-color: #cbd5e1;
+            background-color: #ffffff;
+            cursor: text;
+        }
+        
+        .prontuario-text[contenteditable="true"]:focus {
+            outline: none;
+            border: 1px solid var(--primary);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .prontuario-text strong { color: var(--text-main); font-weight: 600; }
+        .prontuario-text br { content: ""; display: block; margin-bottom: 8px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Assistente de Prontuário Médico</h1>
+        <p class="subtitle">Geração automática de SOAP via Inteligência Artificial</p>
+
+        <div class="controls">
+            <button id="btnGravar"><span style="font-size: 20px;">🎙️</span> Iniciar Consulta</button>
+            <button id="btnParar" disabled><span style="font-size: 20px;">⏹️</span> Finalizar</button>
+        </div>
+
+        <div id="statusBar" class="status-bar"></div>
+
+        <div id="resultsContainer" class="results-container">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Prontuário Estruturado (SOAP)</h3>
+                    <span class="edit-hint">✏️ Clique no texto para editar</span>
+                </div>
+                <div id="prontuarioResult" class="prontuario-text" contenteditable="true" spellcheck="false"></div>
+                
+                <button id="btnCopiar">📋 Copiar Prontuário Final</button>
+            </div>
+            
+            <div class="card" style="background-color: transparent; border-style: dashed;">
+                <h3>Transcrição Bruta (O que a IA ouviu)</h3>
+                <div id="transcricaoResult" class="transcricao-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        const btnGravar = document.getElementById('btnGravar');
+        const btnParar = document.getElementById('btnParar');
+        const btnCopiar = document.getElementById('btnCopiar');
+        const statusBar = document.getElementById('statusBar');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const transcricaoResult = document.getElementById('transcricaoResult');
+        const prontuarioResult = document.getElementById('prontuarioResult');
+
+        function formatarMarkdown(texto) {
+            if (!texto) return "";
+            return texto
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
+
+        btnGravar.onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioChunks = [];
+                    enviarParaBackend(audioBlob);
+                };
+
+                mediaRecorder.start();
+                btnGravar.disabled = true;
+                btnParar.disabled = false;
+                resultsContainer.style.display = 'none';
+                statusBar.className = 'status-bar status-recording';
+                statusBar.innerHTML = '🔴 Gravando consulta... Fale claramente.';
+
+            } catch (err) {
+                alert("Erro ao acessar o microfone. Verifique as permissões.");
+            }
+        };
+
+        btnParar.onclick = () => {
+            mediaRecorder.stop();
+            btnGravar.disabled = true;
+            btnParar.disabled = true;
+            statusBar.className = 'status-bar status-processing';
+            statusBar.innerHTML = '⚙️ Processando áudio com Inteligência Artificial. Aguarde...';
+        };
+
+        // Nova função para copiar o texto formatado para o clipboard
+        btnCopiar.onclick = () => {
+            // Pega o texto limpo, sem as tags HTML de formatação
+            const textoParaCopiar = prontuarioResult.innerText;
+            
+            navigator.clipboard.writeText(textoParaCopiar).then(() => {
+                const originalText = btnCopiar.innerHTML;
+                btnCopiar.innerHTML = '✅ Copiado com sucesso!';
+                btnCopiar.style.backgroundColor = '#059669';
+                
+                // Volta o botão ao normal após 2 segundos
+                setTimeout(() => {
+                    btnCopiar.innerHTML = '📋 Copiar Prontuário Final';
+                    btnCopiar.style.backgroundColor = 'var(--success)';
+                }, 2000);
+            }).catch(err => {
+                alert('Erro ao copiar o texto. Tente selecionar e copiar manualmente.');
+            });
+        };
+
+        async function enviarParaBackend(audioBlob) {
+            const formData = new FormData();
+            formData.append("file", audioBlob, "consulta.webm");
+
+            try {
+                const response = await fetch("http://localhost:8000/transcrever/", {
+                    method: "POST",
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                btnGravar.disabled = false;
+                statusBar.style.display = 'none';
+                
+                transcricaoResult.innerText = `"${data.texto_original}"`;
+                prontuarioResult.innerHTML = formatarMarkdown(data.prontuario);
+                resultsContainer.style.display = 'flex';
+
+            } catch (error) {
+                btnGravar.disabled = false;
+                statusBar.className = 'status-bar status-recording';
+                statusBar.style.backgroundColor = '#fef2f2';
+                statusBar.style.color = '#dc2626';
+                statusBar.style.animation = 'none';
+                statusBar.innerHTML = '❌ Erro de conexão com o servidor.';
+            }
+        }
+    </script>
+</body>
+</html>
